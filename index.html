@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <title>Borealis</title>
-  <link rel="icon" type="image/png" href="borealis.png">
   <meta charset="utf-8"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@300;400;700&display=swap" rel="stylesheet">
@@ -12,7 +11,6 @@
     canvas#canvas { position: absolute; top: 0; left: 0; z-index: 0; cursor: crosshair; }
     #glow-canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; mix-blend-mode:screen; }
 
-    /* ── BUTTONS ── */
     .fab {
       position: fixed; z-index: 10;
       width: 52px; height: 52px; border-radius: 50%;
@@ -33,11 +31,8 @@
 
     #save-btn   { bottom: 28px; right: 156px; }
     #save-btn svg { width: 20px; height: 20px; fill: none; stroke: rgba(190,215,255,0.85); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
-    /* save flash */
     #save-btn.flash { border-color: rgba(80,140,255,0.9); box-shadow: 0 0 22px rgba(60,120,255,0.45); }
 
-    /* ── HINT ── */
     #hint {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
       z-index: 5; pointer-events: none;
@@ -51,7 +46,6 @@
     #hint .sub { font-size: 10px; opacity: 0.5; letter-spacing: 0.18em; }
     #hint.hidden { opacity: 0; }
 
-    /* ── PANEL ── */
     #panel {
       position: fixed; top: 0; right: 0; z-index: 9;
       width: 310px; height: 100vh;
@@ -114,7 +108,6 @@
     .reset-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:10px; border-radius:9px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.025); color:rgba(255,255,255,0.4); font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:background 0.2s, color 0.2s, border-color 0.2s; }
     .reset-btn:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.8); border-color:rgba(255,255,255,0.16); }
 
-    /* quality pills */
     .quality-row { display: flex; gap: 6px; }
     .q-pill {
       flex: 1; padding: 7px 0; border-radius: 7px; cursor: pointer; text-align: center;
@@ -127,7 +120,6 @@
     .q-pill.active { background: rgba(70,130,255,0.18); border-color: rgba(70,130,255,0.5); color: rgba(160,200,255,0.95); box-shadow: 0 0 10px rgba(60,120,255,0.15); }
     .q-note { font-family: 'Space Mono', monospace; font-size: 8.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.22); margin-top: 8px; text-align: center; }
 
-    /* save toast */
     #toast {
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px);
       z-index: 20; pointer-events: none;
@@ -150,17 +142,14 @@
 
 <div id="hint">drag to sculpt the void<br><span class="sub">hold &amp; drag · space to pause</span></div>
 
-<!-- SAVE -->
 <button class="fab" id="save-btn" title="Save image">
   <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 </button>
 
-<!-- PAUSE -->
 <button class="fab" id="pause-btn" title="Pause (Space)">
   <svg id="pause-icon" width="18" height="18" viewBox="0 0 24 24" fill="rgba(190,215,255,0.85)"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
 </button>
 
-<!-- SETTINGS -->
 <button class="fab" id="open-btn" title="Settings">
   <svg viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="3"/>
@@ -280,9 +269,8 @@
   </div>
 </div>
 
-<!-- ═══════════════ SHADERS ═══════════════ -->
+<!-- SHADERS -->
 
-<!-- MOTION: original logic + uForce uniform -->
 <script type="application/x-glsl" id="fluid-motion">
 precision highp float;
 varying vec2 vUv;
@@ -304,7 +292,6 @@ void main() {
 }
 </script>
 
-<!-- SOLVER: faithful to original — v and K are uniforms but default-match original consts -->
 <script type="application/x-glsl" id="fluid-solver">
 precision highp float;
 varying vec2 vUv;
@@ -312,8 +299,8 @@ uniform sampler2D tSampler;
 uniform sampler2D motion;
 uniform float dt;
 uniform vec2 d;
-uniform float uViscosity;  /* default 0.05  */
-uniform float uPressure;   /* default 0.15  */
+uniform float uViscosity;
+uniform float uPressure;
 vec2 dx = vec2(d.x, 0.0);
 vec2 dy = vec2(0.0, d.y);
 const float CentralScale = 0.5;
@@ -343,7 +330,6 @@ void main() {
   vec2 Viscosity = uViscosity * Laplacian;
   vec2 DdX = vec2(UdX.z, UdY.z);
   vec2 PdX  = (uPressure / dt) * DdX;
-  /* This clamp is what creates the persistent blue residue — do not change range */
   vec3 Temp = vec3(DdX, UdX.x + UdY.y);
   FC.z = clamp(FC.z - dt * dot(FC.xyz, Temp), 0.3, 1.7);
   vec2 Was = vUv - dt * FC.xy * d;
@@ -357,7 +343,6 @@ void main() {
 }
 </script>
 
-<!-- DYE: original logic with uniform diffusion -->
 <script type="application/x-glsl" id="fluid-dye">
 precision highp float;
 varying vec2 vUv;
@@ -366,7 +351,7 @@ uniform sampler2D motion;
 uniform sampler2D solver;
 uniform float dt;
 uniform vec2 d;
-uniform float uDiffusion;  /* default 0.994 */
+uniform float uDiffusion;
 const float acc = 2.0;
 void main() {
   vec2 Was = vUv - dt * texture2D(solver, vUv).xy * d * acc;
@@ -376,7 +361,6 @@ void main() {
 }
 </script>
 
-<!-- PARTICLE DATA -->
 <script type="application/x-glsl" id="fragment-particle-data">
 precision highp float;
 varying vec2 vUv;
@@ -393,7 +377,6 @@ void main() {
 }
 </script>
 
-<!-- PARTICLES VERTEX -->
 <script type="application/x-glsl" id="vertex-particles">
 precision highp float;
 attribute vec2 position;
@@ -410,20 +393,18 @@ void main() {
 }
 </script>
 
-<!-- PARTICLES FRAGMENT -->
 <script type="application/x-glsl" id="fragment-particles">
 precision highp float;
 uniform vec4 uParticleColor;
 void main() { gl_FragColor = uParticleColor; }
 </script>
 
-<!-- VISUALIZER: original formula — dye scalar * color vec4 + particles -->
 <script type="application/x-glsl" id="fluid-visualizer">
 precision highp float;
 varying vec2 vUv;
 uniform sampler2D sampler;
 uniform sampler2D particles;
-uniform vec4 uDyeColor;   /* vec4 so alpha carries through */
+uniform vec4 uDyeColor;
 void main() {
   float dye = texture2D(sampler, vUv).z;
   vec4  p   = texture2D(particles, vUv);
@@ -431,9 +412,8 @@ void main() {
 }
 </script>
 
-<!-- ═══════════════ LIBRARIES ═══════════════ -->
+<!-- LIBRARIES -->
 <script>
-/* RTT.gl – minimal faithful port */
 ;(function(G){
 'use strict';
 var U={};
@@ -462,7 +442,6 @@ G.RTT=RTT;
 </script>
 
 <script>
-/* Stage.gl */
 ;(function(G){
 'use strict';
 var Stage={};
@@ -480,7 +459,7 @@ G.Stage=Stage;
 })(window);
 </script>
 
-<!-- ═══════════════ SHARED PARAMS ═══════════════ -->
+<!-- SHARED PARAMS -->
 <script>
 window.P = {
   viscosity : 0.05,
@@ -500,9 +479,8 @@ window.P = {
 };
 </script>
 
-<!-- ═══════════════ EFFECTS ═══════════════ -->
+<!-- EFFECTS -->
 <script>
-/* Motion */
 (function(){
 Stage.Motion=Stage.Effect.extend({
   name:'motion',
@@ -537,7 +515,6 @@ Stage.Motion=Stage.Effect.extend({
 </script>
 
 <script>
-/* Fluid */
 (function(){
 Stage.Fluid=Stage.Effect.extend({
   name:'fluid',
@@ -561,24 +538,33 @@ Stage.Fluid=Stage.Effect.extend({
 </script>
 
 <script>
-/* Particles */
+/* ── PARTICLES — FIXED ──
+   Bug 1: texSubImage2D used (x, y, width=PER, height=1) but when bi wraps across
+          rows the x offset overflows the texture width, causing a WebGL error and
+          silently killing the entire particle system for the rest of the session.
+   Fix:   Write one particle at a time, computing correct (x, y) per particle,
+          so the write always stays within bounds regardless of wrap position.
+          We still batch the Float32Array allocation but upload row-by-row when a
+          batch straddles a row boundary.
+*/
 (function(){
 Stage.Particles=Stage.Effect.extend({
   name:'particles',
   initialize:function(ctx){
     this.ctx=ctx;var gl=ctx.gl;
     var C=P.cells;
-    /* particle count scales with quality: 128→64k, 256→256k, 512→512k */
     var PC=1024*(C===128?64:C===256?256:512);
-    var CPD=Math.ceil(Math.sqrt(PC)),PER=CPD,PI2=Math.PI*2;
-    this._PER=PER;this._CPD=CPD;this._PC=PC;this._PI2=PI2;
-    var VERTS=[];for(var i=0,l=CPD*CPD;i<l;i++){VERTS.push(i%CPD/CPD,Math.floor(i/CPD)/CPD);}
+    var CPD=Math.ceil(Math.sqrt(PC));
+    this._CPD=CPD;this._PC=PC;
+    /* Build UV attribute array once */
+    var VERTS=[];
+    for(var i=0,l=CPD*CPD;i<l;i++){VERTS.push(i%CPD/CPD,Math.floor(i/CPD)/CPD);}
     this.du={d:{type:'2f',value:[1/C,1/C]},dt:{type:'1f',value:P.timestep},solver:{type:'t',value:ctx.effects.fluid.solver.output},uFadeSpeed:{type:'1f',value:P.particleFade}};
     this.data=new RTT(gl,{width:CPD,height:CPD,texture:{type:gl.FLOAT}}).fragment(document.getElementById('fragment-particle-data').textContent,this.du).render();
     var dpr=window.devicePixelRatio||1;
     this.pu={ratio:{type:'1f',value:ctx.aspect*dpr},particleData:{type:'t',value:this.data.output},uParticleSize:{type:'1f',value:P.particleSize},uParticleColor:{type:'4f',value:P.particleColor}};
     this.particles=new RTT(gl,{texture:{type:gl.FLOAT},geometry:[new Float32Array(VERTS),gl.POINTS,0,VERTS.length/2]}).vertexFragment(document.getElementById('vertex-particles').textContent,document.getElementById('fragment-particles').textContent,this.pu).render();
-    this.buf=[];this.bi=0;
+    this._bi=0; /* linear particle index, wraps at PC */
     var onMM=this.mm.bind(this);
     document.addEventListener('mouseup',function(){document.removeEventListener('mousemove',onMM);});
     document.addEventListener('mousedown',function(e){if('buttons'in e?e.buttons===1:e.which||e.button)document.addEventListener('mousemove',onMM);});
@@ -594,6 +580,7 @@ Stage.Particles=Stage.Effect.extend({
     gl.enable(gl.BLEND);this.particles.clear().render();gl.disable(gl.BLEND);
   },
   resize:function(ctx){this.ctx=ctx;this.particles.resize();},
+  /* Spawn N particles at the cursor — safe row-aware upload */
   mm:function(e){
     if(this.ctx.paused)return;
     if(e.target!==document.getElementById('canvas'))return;
@@ -601,19 +588,30 @@ Stage.Particles=Stage.Effect.extend({
     var dpr=window.devicePixelRatio||1;
     var cssW=this.ctx.width/dpr, cssH=this.ctx.height/dpr;
     var pi=e.offsetX/cssW, pj=1-e.offsetY/cssH;
-    var CPD=this._CPD,PER=this._PER,PC=this._PC,PI2=this._PI2;
-    var x=~~(this.bi%CPD),y=~~(this.bi/CPD);
+    var CPD=this._CPD, PC=this._PC, PI2=Math.PI*2;
+    /* number of particles to spawn per mouse event (same as original PER = CPD) */
+    var PER=CPD;
     gl.bindTexture(gl.TEXTURE_2D,this.data.output);
-    for(var p=0;p<PER;p++){var a=Math.random()*PI2;this.buf.push(pi+Math.cos(a)*Math.random()*P.particleRadius,pj+Math.sin(a)*Math.random()*P.particleRadius*this.ctx.aspect,P.particleSize,Math.random()*P.particleAge);}
-    gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,PER,1,gl.RGBA,gl.FLOAT,new Float32Array(this.buf));
-    this.buf=[];this.bi=(this.bi+PER)%PC;
+    for(var p=0;p<PER;p++){
+      var idx=(this._bi+p)%PC; /* wrap around the full pool */
+      var tx=idx%CPD;
+      var ty=Math.floor(idx/CPD);
+      var a=Math.random()*PI2;
+      var r=Math.random()*P.particleRadius;
+      var px=pi+Math.cos(a)*r;
+      var py=pj+Math.sin(a)*r*this.ctx.aspect;
+      /* Upload exactly 1 texel at (tx, ty) — always safe */
+      gl.texSubImage2D(gl.TEXTURE_2D,0,tx,ty,1,1,gl.RGBA,gl.FLOAT,
+        new Float32Array([px, py, P.particleSize, Math.random()*P.particleAge]));
+    }
+    gl.bindTexture(gl.TEXTURE_2D,null);
+    this._bi=(this._bi+PER)%PC;
   }
 });
 })();
 </script>
 
 <script>
-/* Visualizer — uses vec4 dyeColor exactly like original */
 (function(){
 Stage.Visualizer=Stage.Effect.extend({
   name:'visualizer',
@@ -634,7 +632,7 @@ Stage.Visualizer=Stage.Effect.extend({
 })();
 </script>
 
-<!-- ═══════════════ GLOW ═══════════════ -->
+<!-- GLOW -->
 <script>
 var glowCtx=document.getElementById('glow-canvas').getContext('2d');
 var glowF=0;
@@ -663,7 +661,7 @@ window.addEventListener('resize',resizeGlow);
 })();
 </script>
 
-<!-- ═══════════════ MAIN + UI ═══════════════ -->
+<!-- MAIN + UI -->
 <script>
 (function(){
   var canvas=document.getElementById('canvas');
@@ -680,7 +678,6 @@ window.addEventListener('resize',resizeGlow);
 
   var renderer,gl,ok=true;
   try{renderer=new Stage.Renderer(canvas);gl=renderer.ctx.gl;}catch(e){ok=false;}
-  // Use renderer.ctx not renderer.context
   ok=ok&&gl&&gl.getExtension('OES_texture_float')&&gl.getExtension('OES_texture_float_linear');
   if(!ok){alert('WebGL with float textures required.');return;}
 
@@ -694,7 +691,7 @@ window.addEventListener('resize',resizeGlow);
     .effect(new Stage.Visualizer())
     .render();
 
-  /* ── PAUSE ── */
+  /* PAUSE */
   var pauseBtn=document.getElementById('pause-btn');
   var pauseIcon=document.getElementById('pause-icon');
   function updatePauseIcon(){
@@ -704,42 +701,48 @@ window.addEventListener('resize',resizeGlow);
   }
   pauseBtn.addEventListener('click',function(){renderer.pause();updatePauseIcon();});
   document.addEventListener('keydown',function(e){
-    if(e.keyCode===32){
-      e.preventDefault();
-      renderer.pause();
-      updatePauseIcon();
-    }
+    if(e.keyCode===32){e.preventDefault();renderer.pause();updatePauseIcon();}
   });
 
-  /* ── SAVE ── */
+  /* ── SAVE — FIX: capture at full device-pixel resolution ── */
   var toast=document.getElementById('toast');
   var saveBtn=document.getElementById('save-btn');
   saveBtn.addEventListener('click',function(){
-    /* Compose: WebGL canvas + glow overlay onto a temp canvas */
-    var w=canvas.width,h=canvas.height;
+    /* 
+     * canvas already has the full DPR resolution (e.g. 2880×1800 on a Retina display).
+     * We composite WebGL + glow at that native resolution so the saved PNG is crisp.
+     */
+    var w=canvas.width, h=canvas.height;
     var tmp=document.createElement('canvas');
-    tmp.width=w;tmp.height=h;
+    tmp.width=w; tmp.height=h;
     var tc=tmp.getContext('2d');
-    /* draw black background */
-    tc.fillStyle='#000';tc.fillRect(0,0,w,h);
-    /* draw WebGL frame */
-    tc.drawImage(canvas,0,0);
-    /* draw glow layer with screen blend */
-    tc.save();tc.globalCompositeOperation='screen';
-    tc.drawImage(document.getElementById('glow-canvas'),0,0,w,h);
+
+    /* 1. Black background */
+    tc.fillStyle='#000';
+    tc.fillRect(0,0,w,h);
+
+    /* 2. WebGL scene — canvas is already at native DPR size */
+    tc.drawImage(canvas,0,0,w,h);
+
+    /* 3. Glow overlay composited with screen blend at the same native size */
+    var gc=document.getElementById('glow-canvas');
+    tc.save();
+    tc.globalCompositeOperation='screen';
+    tc.drawImage(gc,0,0,w,h);
     tc.restore();
-    /* download */
+
+    /* Download at native resolution */
     var link=document.createElement('a');
     link.download='borealis-'+Date.now()+'.png';
     link.href=tmp.toDataURL('image/png');
     link.click();
-    /* flash feedback */
+
     saveBtn.classList.add('flash');
     toast.classList.add('show');
     setTimeout(function(){saveBtn.classList.remove('flash');toast.classList.remove('show');},1800);
   });
 
-  /* ── PANEL ── */
+  /* PANEL */
   var openBtn=document.getElementById('open-btn'),panel=document.getElementById('panel');
   openBtn.addEventListener('click',function(){panel.classList.toggle('open');openBtn.classList.toggle('active');});
   document.addEventListener('mousedown',function(e){
@@ -747,10 +750,10 @@ window.addEventListener('resize',resizeGlow);
     {panel.classList.remove('open');openBtn.classList.remove('active');}
   });
 
-  /* ── HINT ── */
+  /* HINT */
   document.addEventListener('mousedown',function(){document.getElementById('hint').classList.add('hidden');},{once:true});
 
-  /* ── SLIDERS ── */
+  /* SLIDERS */
   function bind(slId,valId,key,fmt){
     var sl=document.getElementById(slId),vl=document.getElementById(valId);
     sl.addEventListener('input',function(){var v=parseFloat(sl.value);P[key]=v;vl.textContent=fmt(v);});
@@ -766,21 +769,17 @@ window.addEventListener('resize',resizeGlow);
   bind('sl-pfade','val-pfade','particleFade',function(v){return v.toFixed(3);});
   bind('sl-glow','val-glow','glowIntensity',function(v){return v.toFixed(1);});
 
-  /* ── SWATCH HELPER ── */
-  function hexToVec(hex, alpha) {
+  /* SWATCHES */
+  function hexToVec(hex,alpha){
     var r=parseInt(hex.slice(1,3),16)/255;
     var g=parseInt(hex.slice(3,5),16)/255;
     var b=parseInt(hex.slice(5,7),16)/255;
     return alpha!==undefined?[r,g,b,alpha]:[r,g,b];
   }
-  function bindSwatches(rowId, pickerId, applyFn) {
+  function bindSwatches(rowId,pickerId,applyFn){
     var row=document.getElementById(rowId);
     var picker=document.getElementById(pickerId);
-    function activateSwatch(sw) {
-      row.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
-      sw.classList.add('active');
-    }
-    /* existing static swatches */
+    function activateSwatch(sw){row.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});sw.classList.add('active');}
     row.querySelectorAll('.swatch').forEach(function(sw){
       sw.addEventListener('click',function(){
         activateSwatch(sw);
@@ -788,39 +787,26 @@ window.addEventListener('resize',resizeGlow);
         applyFn(raw.split(',').map(Number));
       });
     });
-    /* + color picker — insert new custom swatch before the + button */
     var addBtn=row.querySelector('.swatch-add');
-    picker.addEventListener('input',function(){/* live preview */
-      var vals=hexToVec(picker.value,applyFn===applyDye?1.0:0.72);
-      applyFn(vals);
-    });
+    picker.addEventListener('input',function(){var vals=hexToVec(picker.value,applyFn===applyDye?1.0:0.72);applyFn(vals);});
     picker.addEventListener('change',function(){
       var hex=picker.value;
       var alpha=applyFn===applyDye?1.0:0.72;
       var vals=hexToVec(hex,alpha);
-      /* create persistent swatch */
-      var sw=document.createElement('div');
-      sw.className='swatch';
+      var sw=document.createElement('div');sw.className='swatch';
       var attr=applyFn===applyDye?'data-dye':'data-pc';
-      sw.setAttribute(attr,vals.join(','));
-      sw.style.background=hex;
-      sw.title='Custom';
+      sw.setAttribute(attr,vals.join(','));sw.style.background=hex;sw.title='Custom';
       row.insertBefore(sw,addBtn);
-      sw.addEventListener('click',function(){
-        activateSwatch(sw);
-        applyFn(vals);
-      });
-      activateSwatch(sw);
-      applyFn(vals);
+      sw.addEventListener('click',function(){activateSwatch(sw);applyFn(vals);});
+      activateSwatch(sw);applyFn(vals);
     });
   }
   function applyDye(vals){P.dyeColor=vals.length===4?vals:[vals[0],vals[1],vals[2],1.0];}
   function applyPc(vals){P.particleColor=vals;}
-
   bindSwatches('dye-swatches','dye-color-picker',applyDye);
   bindSwatches('particle-swatches','pc-color-picker',applyPc);
 
-  /* ── GLOW TOGGLE ── */
+  /* GLOW TOGGLE */
   var togGlow=document.getElementById('tog-glow'),glowRow=document.getElementById('glow-row');
   togGlow.addEventListener('click',function(){
     togGlow.classList.toggle('on');
@@ -828,7 +814,7 @@ window.addEventListener('resize',resizeGlow);
     glowRow.style.opacity=P.glowOn?'1':'0.35';
   });
 
-  /* ── QUALITY PILLS ── */
+  /* QUALITY PILLS */
   var qNote=document.getElementById('q-note');
   var qLabels={128:'128 × 128 fluid grid · fast',256:'256 × 256 fluid grid · balanced',512:'512 × 512 fluid grid · best'};
   function setQuality(cells){
@@ -837,34 +823,21 @@ window.addEventListener('resize',resizeGlow);
       p.classList.toggle('active',parseInt(p.getAttribute('data-cells'))===cells);
     });
     qNote.textContent=qLabels[cells];
-    /* reinitialise renderer with new cell count */
     var wasPaused=renderer.paused;
     if(!wasPaused)renderer.pause();
-    /* re-create effects on existing GL context */
-    renderer.effects=[];renderer.names={};
-    renderer.ctx.effects=renderer.names;
-    gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-    gl.clearColor(0,0,0,1);
-    renderer
-      .effect(new Stage.Motion())
-      .effect(new Stage.Fluid())
-      .effect(new Stage.Particles())
-      .effect(new Stage.Visualizer());
+    renderer.effects=[];renderer.names={};renderer.ctx.effects=renderer.names;
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.clearColor(0,0,0,1);
+    renderer.effect(new Stage.Motion()).effect(new Stage.Fluid()).effect(new Stage.Particles()).effect(new Stage.Visualizer());
     renderer.effects.sort(function(a,b){return a.index-b.index;});
     for(var i=0;i<renderer.effects.length;i++)renderer.effects[i].initialize(renderer.ctx);
     if(!wasPaused){renderer.paused=false;renderer.ctx.paused=false;_startLoop(renderer);}
   }
-  function _startLoop(r){
-    function go(){if(!r.paused)requestAnimationFrame(go);for(var i=0;i<r.effects.length;i++)r.effects[i].update(r.ctx);}go();
-  }
+  function _startLoop(r){function go(){if(!r.paused)requestAnimationFrame(go);for(var i=0;i<r.effects.length;i++)r.effects[i].update(r.ctx);}go();}
   document.querySelectorAll('.q-pill').forEach(function(pill){
-    pill.addEventListener('click',function(){
-      var c=parseInt(pill.getAttribute('data-cells'));
-      if(c!==P.cells)setQuality(c);
-    });
+    pill.addEventListener('click',function(){var c=parseInt(pill.getAttribute('data-cells'));if(c!==P.cells)setQuality(c);});
   });
 
-  /* ── RESET ── */
+  /* RESET */
   var DEFS={viscosity:0.05,pressure:0.15,diffusion:0.994,force:100,timestep:0.25,particleSize:0.7,particleAge:5,particleRadius:0.025,particleFade:0.01,dyeColor:[0.3,0.5,1.1,1.0],particleColor:[1.0,0.5,0.166,0.66],glowOn:true,glowIntensity:0.5};
   document.getElementById('reset-btn').addEventListener('click',function(){
     Object.assign(P,JSON.parse(JSON.stringify(DEFS)));

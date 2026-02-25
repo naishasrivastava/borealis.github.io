@@ -44,6 +44,22 @@
       text-shadow: 0 0 30px rgba(100,160,255,0.5), 0 0 80px rgba(80,130,255,0.25);
       transition: opacity 2s ease;
     }
+    #hint .hint-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3.5rem, 9vw, 6.5rem);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.95);
+      text-shadow:
+        0 0 30px rgba(150,200,255,1.0),
+        0 0 80px rgba(100,160,255,0.8),
+        0 0 160px rgba(60,120,255,0.5),
+        0 0 300px rgba(40,90,255,0.25);
+      line-height: 1;
+      margin-bottom: 1.6rem;
+      display: block;
+      text-transform: uppercase;
+    }
     #hint .sub { font-size: 10px; opacity: 0.5; letter-spacing: 0.18em; }
     #hint.hidden { opacity: 0; }
 
@@ -91,7 +107,7 @@
       border: 1.5px dashed rgba(255,255,255,0.2);
       background: transparent;
       display: flex; align-items: center; justify-content: center;
-      transition: border-color 0.2s, background 0.2s, transform 0.18s;
+      transition: border-color 0.2s, background 0.2s, transform 0.18px;
       color: rgba(255,255,255,0.35); font-size: 18px; line-height: 1;
       position: relative; flex-shrink: 0;
     }
@@ -141,7 +157,11 @@
 <canvas id="glow-canvas"></canvas>
 <div id="toast">Image saved</div>
 
-<div id="hint">drag to sculpt the cosmos<br><span class="sub">hold &amp; drag · space to pause</span></div>
+<div id="hint">
+  <span class="hint-title">Borealis</span>
+  drag to sculpt the cosmos<br>
+  <span class="sub">hold &amp; drag · space to pause</span>
+</div>
 
 <button class="fab" id="save-btn" title="Save image">
   <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -539,15 +559,6 @@ Stage.Fluid=Stage.Effect.extend({
 </script>
 
 <script>
-/* ── PARTICLES — FIXED ──
-   Bug 1: texSubImage2D used (x, y, width=PER, height=1) but when bi wraps across
-          rows the x offset overflows the texture width, causing a WebGL error and
-          silently killing the entire particle system for the rest of the session.
-   Fix:   Write one particle at a time, computing correct (x, y) per particle,
-          so the write always stays within bounds regardless of wrap position.
-          We still batch the Float32Array allocation but upload row-by-row when a
-          batch straddles a row boundary.
-*/
 (function(){
 Stage.Particles=Stage.Effect.extend({
   name:'particles',
@@ -557,7 +568,6 @@ Stage.Particles=Stage.Effect.extend({
     var PC=1024*(C===128?64:C===256?256:512);
     var CPD=Math.ceil(Math.sqrt(PC));
     this._CPD=CPD;this._PC=PC;
-    /* Build UV attribute array once */
     var VERTS=[];
     for(var i=0,l=CPD*CPD;i<l;i++){VERTS.push(i%CPD/CPD,Math.floor(i/CPD)/CPD);}
     this.du={d:{type:'2f',value:[1/C,1/C]},dt:{type:'1f',value:P.timestep},solver:{type:'t',value:ctx.effects.fluid.solver.output},uFadeSpeed:{type:'1f',value:P.particleFade}};
@@ -565,7 +575,7 @@ Stage.Particles=Stage.Effect.extend({
     var dpr=window.devicePixelRatio||1;
     this.pu={ratio:{type:'1f',value:ctx.aspect*dpr},particleData:{type:'t',value:this.data.output},uParticleSize:{type:'1f',value:P.particleSize},uParticleColor:{type:'4f',value:P.particleColor}};
     this.particles=new RTT(gl,{texture:{type:gl.FLOAT},geometry:[new Float32Array(VERTS),gl.POINTS,0,VERTS.length/2]}).vertexFragment(document.getElementById('vertex-particles').textContent,document.getElementById('fragment-particles').textContent,this.pu).render();
-    this._bi=0; /* linear particle index, wraps at PC */
+    this._bi=0;
     var onMM=this.mm.bind(this);
     document.addEventListener('mouseup',function(){document.removeEventListener('mousemove',onMM);});
     document.addEventListener('mousedown',function(e){if('buttons'in e?e.buttons===1:e.which||e.button)document.addEventListener('mousemove',onMM);});
@@ -581,7 +591,6 @@ Stage.Particles=Stage.Effect.extend({
     gl.enable(gl.BLEND);this.particles.clear().render();gl.disable(gl.BLEND);
   },
   resize:function(ctx){this.ctx=ctx;this.particles.resize();},
-  /* Spawn N particles at the cursor — safe row-aware upload */
   mm:function(e){
     if(this.ctx.paused)return;
     if(e.target!==document.getElementById('canvas'))return;
@@ -590,18 +599,16 @@ Stage.Particles=Stage.Effect.extend({
     var cssW=this.ctx.width/dpr, cssH=this.ctx.height/dpr;
     var pi=e.offsetX/cssW, pj=1-e.offsetY/cssH;
     var CPD=this._CPD, PC=this._PC, PI2=Math.PI*2;
-    /* number of particles to spawn per mouse event (same as original PER = CPD) */
     var PER=CPD;
     gl.bindTexture(gl.TEXTURE_2D,this.data.output);
     for(var p=0;p<PER;p++){
-      var idx=(this._bi+p)%PC; /* wrap around the full pool */
+      var idx=(this._bi+p)%PC;
       var tx=idx%CPD;
       var ty=Math.floor(idx/CPD);
       var a=Math.random()*PI2;
       var r=Math.random()*P.particleRadius;
       var px=pi+Math.cos(a)*r;
       var py=pj+Math.sin(a)*r*this.ctx.aspect;
-      /* Upload exactly 1 texel at (tx, ty) — always safe */
       gl.texSubImage2D(gl.TEXTURE_2D,0,tx,ty,1,1,gl.RGBA,gl.FLOAT,
         new Float32Array([px, py, P.particleSize, Math.random()*P.particleAge]));
     }
@@ -705,39 +712,26 @@ window.addEventListener('resize',resizeGlow);
     if(e.keyCode===32){e.preventDefault();renderer.pause();updatePauseIcon();}
   });
 
-  /* ── SAVE — FIX: capture at full device-pixel resolution ── */
+  /* SAVE */
   var toast=document.getElementById('toast');
   var saveBtn=document.getElementById('save-btn');
   saveBtn.addEventListener('click',function(){
-    /* 
-     * canvas already has the full DPR resolution (e.g. 2880×1800 on a Retina display).
-     * We composite WebGL + glow at that native resolution so the saved PNG is crisp.
-     */
     var w=canvas.width, h=canvas.height;
     var tmp=document.createElement('canvas');
     tmp.width=w; tmp.height=h;
     var tc=tmp.getContext('2d');
-
-    /* 1. Black background */
     tc.fillStyle='#000';
     tc.fillRect(0,0,w,h);
-
-    /* 2. WebGL scene — canvas is already at native DPR size */
     tc.drawImage(canvas,0,0,w,h);
-
-    /* 3. Glow overlay composited with screen blend at the same native size */
     var gc=document.getElementById('glow-canvas');
     tc.save();
     tc.globalCompositeOperation='screen';
     tc.drawImage(gc,0,0,w,h);
     tc.restore();
-
-    /* Download at native resolution */
     var link=document.createElement('a');
     link.download='borealis-'+Date.now()+'.png';
     link.href=tmp.toDataURL('image/png');
     link.click();
-
     saveBtn.classList.add('flash');
     toast.classList.add('show');
     setTimeout(function(){saveBtn.classList.remove('flash');toast.classList.remove('show');},1800);
@@ -751,7 +745,7 @@ window.addEventListener('resize',resizeGlow);
     {panel.classList.remove('open');openBtn.classList.remove('active');}
   });
 
-  /* HINT */
+  /* HINT — dismiss on first mousedown */
   document.addEventListener('mousedown',function(){document.getElementById('hint').classList.add('hidden');},{once:true});
 
   /* SLIDERS */
